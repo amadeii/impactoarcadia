@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertApplicationSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth } from "./auth";
+import { isOidcDisabled, logAuthMode } from "./authMode";
 import { tenantContext } from "./tenantContext";
 import tenantsRouter from "./tenants/routes";
 import { registerChatRoutes } from "./replit_integrations/chat";
@@ -98,15 +99,28 @@ export async function registerRoutes(
 
   // Auth and session setup first
   setupAuth(app);
+  logAuthMode();
 
   // Tenant context: injeta req.tenantId em todas as rotas autenticadas
   app.use(tenantContext);
 
   // Tenant management routes
   app.use('/api/tenants', tenantsRouter);
+
+  const oidcDisabled = isOidcDisabled();
   
   // Arcádia Plus - Proxy registered AFTER session but BEFORE auth-protected routes
-  await setupPlusProxy(app);
+  if (oidcDisabled) {
+    app.get("/api/plus/status", (_req, res) => {
+      res.json({ status: "disabled", reason: "External OIDC/SSO disabled" });
+    });
+  } else {
+    try {
+      await setupPlusProxy(app);
+    } catch (error: any) {
+      console.warn("[startup] Plus proxy/SSO disabled after initialization failure:", error.message);
+    }
+  }
   
   // Metabase BI - Proxy to Metabase instance
   setupMetabaseProxy(app);
@@ -197,7 +211,13 @@ export async function registerRoutes(
   registerAgentCard(app); // Agent Card na raiz (/.well-known/agent.json)
   
   // Arcádia Plus - SSO routes (proxy already registered at top)
-  app.use("/api/plus/sso", plusSsoRoutes);
+  if (oidcDisabled) {
+    app.use("/api/plus/sso", (_req, res) => {
+      res.status(503).json({ error: "External OIDC/SSO disabled" });
+    });
+  } else {
+    app.use("/api/plus/sso", plusSsoRoutes);
+  }
 
   app.get("/api/tenants", async (_req, res) => {
     try {
