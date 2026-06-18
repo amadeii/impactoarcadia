@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt-get update   && apt-get install -y --no-install-recommends     ca-certificates     python3     python3-pip     python-is-python3     build-essential   && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install --include=dev
 
 RUN python -m pip install --break-system-packages --no-cache-dir   fastapi   uvicorn   pydantic   pandas   numpy   cryptography
 
