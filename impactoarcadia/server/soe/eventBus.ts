@@ -140,6 +140,26 @@ const LOCK_DURATION_S = 30;       // lock pessimista de 30s por evento
 
 let workerRunning = false;
 let workerTimer: ReturnType<typeof setTimeout> | null = null;
+let missingTableWarned = false;
+
+function envFlagEnabled(value: string | undefined): boolean {
+  return ["1", "true", "yes", "on"].includes((value || "").trim().toLowerCase());
+}
+
+function workerDisabledByEnv(): boolean {
+  if (envFlagEnabled(process.env.DISABLE_SOE_EVENT_WORKER)) return true;
+
+  const explicit = process.env.SOE_EVENT_WORKER_ENABLED;
+  if (explicit == null || explicit === "") return false;
+  return !envFlagEnabled(explicit);
+}
+
+async function soeEventsTableExists(): Promise<boolean> {
+  const { rows } = await pool.query<{ table_name: string | null }>(
+    "SELECT to_regclass('public.soe_events') AS table_name",
+  );
+  return Boolean(rows[0]?.table_name);
+}
 
 /**
  * Inicia o worker de processamento de eventos em background.
@@ -147,9 +167,28 @@ let workerTimer: ReturnType<typeof setTimeout> | null = null;
  */
 export function startEventWorker(): void {
   if (workerRunning) return;
+  if (workerDisabledByEnv()) {
+    console.log("[SOE EventWorker] Desativado por env.");
+    return;
+  }
+
   workerRunning = true;
-  console.log("[SOE EventWorker] Iniciado.");
-  scheduleNextTick();
+  void soeEventsTableExists()
+    .then((exists) => {
+      if (!exists) {
+        workerRunning = false;
+        missingTableWarned = true;
+        console.warn("[SOE EventWorker] Desativado: tabela public.soe_events nao existe.");
+        return;
+      }
+
+      console.log("[SOE EventWorker] Iniciado.");
+      scheduleNextTick();
+    })
+    .catch((err: any) => {
+      workerRunning = false;
+      console.warn("[SOE EventWorker] Desativado: falha ao verificar public.soe_events:", err.message);
+    });
 }
 
 export function stopEventWorker(): void {
@@ -161,7 +200,11 @@ export function stopEventWorker(): void {
 function scheduleNextTick(): void {
   if (!workerRunning) return;
   workerTimer = setTimeout(async () => {
-    await processBatch();
+    try {
+      await processBatch();
+    } catch (err: any) {
+      console.warn("[SOE EventWorker] Ciclo ignorado:", err.message);
+    }
     scheduleNextTick();
   }, WORKER_POLL_MS);
 }
@@ -200,6 +243,15 @@ async function processBatch(): Promise<void> {
          AND attempts >= max_attempts`
     );
   } catch (err: any) {
+    if (err?.code === "42P01" || String(err?.message || "").includes("soe_events")) {
+      if (!missingTableWarned) {
+        console.warn("[SOE EventWorker] Desativado: tabela public.soe_events nao existe.");
+        missingTableWarned = true;
+      }
+      workerRunning = false;
+      return;
+    }
+
     console.error("[SOE EventWorker] Erro no batch:", err.message);
   } finally {
     client.release();

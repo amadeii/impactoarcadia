@@ -10,7 +10,8 @@ import { runControlMigrations } from "./control/migrations";
 import { db } from "../db";
 import { erpSegments } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { isExternalAuthStartupError } from "./authMode";
+import { isExternalAuthStartupError, logAuthMode } from "./authMode";
+import { setupAuth } from "./auth";
 
 function getStartupErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -320,6 +321,16 @@ function safeInit(name: string, fn: () => void | Promise<void>): void {
   );
 }
 
+function envFlagEnabled(value: string | undefined): boolean {
+  return ["1", "true", "yes", "on"].includes((value || "").trim().toLowerCase());
+}
+
+function optionalServiceEnabled(envName: string, defaultValue = false): boolean {
+  const value = process.env[envName];
+  if (value == null || value === "") return defaultValue;
+  return envFlagEnabled(value);
+}
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -347,6 +358,9 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+setupAuth(app);
+logAuthMode();
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -525,12 +539,19 @@ app.use((req, res, next) => {
   pipelineOrchestrator.registerJobHandlers();
   jobQueueService.startProcessing();
 
+  app.use("/api", (req, res) => {
+    res.status(404).json({
+      error: "not_found",
+      message: `API route not found: ${req.method} ${req.originalUrl}`,
+    });
+  });
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    console.error("[express] Request error:", err);
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after
@@ -609,5 +630,9 @@ app.use((req, res, next) => {
   safeInit("Python contabil",    () => startPythonService("contabil",   path.join(process.cwd(), "server/python/contabil_service.py"),  8003));
   safeInit("Python BI",          () => startPythonService("bi",         path.join(process.cwd(), "server/python/bi_engine.py"),         8004));
   safeInit("Python automation",  () => startPythonService("automation", path.join(process.cwd(), "server/python/automation_engine.py"), 8005));
-  safeInit("Node communication", () => startNodeService("communication", path.join(process.cwd(), "server/communication/engine.ts"),    8006));
+  if (optionalServiceEnabled("COMM_ENGINE_ENABLED", false)) {
+    safeInit("Node communication", () => startNodeService("communication", path.join(process.cwd(), "server/communication/engine.ts"),    8006));
+  } else {
+    console.log("[startup] Node communication disabled; set COMM_ENGINE_ENABLED=true to enable it.");
+  }
 })();
