@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { validateProductionSecrets } from "./lib/validateEnv";
-import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { registerAllTools } from "./autonomous/tools";
 import { storage } from "./storage";
@@ -11,6 +10,39 @@ import { runControlMigrations } from "./control/migrations";
 import { db } from "../db";
 import { erpSegments } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { isExternalAuthStartupError } from "./authMode";
+
+function getStartupErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+function warnExternalAuthStartupError(error: unknown): void {
+  console.warn(
+    "[startup] External OAuth/OIDC initialization failed; continuing without external SSO:",
+    getStartupErrorMessage(error),
+  );
+}
+
+process.on("unhandledRejection", (reason) => {
+  if (isExternalAuthStartupError(reason)) {
+    warnExternalAuthStartupError(reason);
+    return;
+  }
+
+  console.error("[startup] Unhandled promise rejection:", reason);
+  throw reason instanceof Error ? reason : new Error(String(reason));
+});
+
+process.on("uncaughtException", (error) => {
+  if (isExternalAuthStartupError(error)) {
+    warnExternalAuthStartupError(error);
+    return;
+  }
+
+  console.error("[startup] Uncaught exception:", error);
+  process.exit(1);
+});
 
 // Valida secrets obrigatórios — lança erro imediato se valores padrão inseguros em produção
 validateProductionSecrets();
@@ -291,6 +323,14 @@ function safeInit(name: string, fn: () => void | Promise<void>): void {
 const app = express();
 const httpServer = createServer(app);
 
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+  });
+});
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -458,7 +498,22 @@ app.use((req, res, next) => {
     console.warn("[Seed] Aviso ao seed de segmentos:", e.message);
   }
 
-  await registerRoutes(httpServer, app);
+  try {
+    const { registerRoutes } = await import("./routes");
+    await registerRoutes(httpServer, app);
+  } catch (error) {
+    if (!isExternalAuthStartupError(error)) {
+      throw error;
+    }
+
+    warnExternalAuthStartupError(error);
+    app.get("/api/plus/status", (_req, res) => {
+      res.json({ status: "disabled", reason: "External OAuth/OIDC initialization failed" });
+    });
+    app.use("/api/plus/sso", (_req, res) => {
+      res.status(503).json({ error: "External OAuth/OIDC unavailable" });
+    });
+  }
 
   await registerAllTools();
 

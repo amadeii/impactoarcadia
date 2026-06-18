@@ -71,11 +71,9 @@ import marketplaceRoutes from "./marketplace/routes";
 import lmsRoutes from "./lms/routes";
 import xosRoutes from "./xos/routes";
 import governanceRoutes from "./governance/routes";
-import { setupPlusProxy } from "./plus/proxy";
 import { setupMetabaseProxy } from "./metabase/proxy";
 import { registerEngineRoomRoutes } from "./engine-room/routes";
 import { registerMetaSetRoutes } from "./metaset/routes";
-import plusSsoRoutes from "./plus/sso";
 import migrationRoutes from "./migration/routes";
 import { githubRoutes } from "./integrations/github";
 import autonomousRoutes from "./autonomous/routes";
@@ -116,6 +114,7 @@ export async function registerRoutes(
     });
   } else {
     try {
+      const { setupPlusProxy } = await import("./plus/proxy");
       await setupPlusProxy(app);
     } catch (error: any) {
       console.warn("[startup] Plus proxy/SSO disabled after initialization failure:", error.message);
@@ -216,6 +215,7 @@ export async function registerRoutes(
       res.status(503).json({ error: "External OIDC/SSO disabled" });
     });
   } else {
+    const plusSsoRoutes = (await import("./plus/sso")).default;
     app.use("/api/plus/sso", plusSsoRoutes);
   }
 
