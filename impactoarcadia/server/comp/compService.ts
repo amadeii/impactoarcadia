@@ -360,8 +360,8 @@ export async function registrarManifestacao(
   );
   if (!entrada) return err("Entrada não encontrada.", "NOT_FOUND");
 
-  const plusUrl   = process.env.PLUS_URL   || process.env.CONTROL_PLUS_URL   || '';
-  const plusToken = process.env.PLUS_API_TOKEN || process.env.CONTROL_PLUS_SUPERADMIN_TOKEN || '';
+  const plusUrl   = process.env.PLUS_URL   || '';
+  const plusToken = process.env.PLUS_API_TOKEN || '';
 
   if (plusUrl && plusToken) {
     try {

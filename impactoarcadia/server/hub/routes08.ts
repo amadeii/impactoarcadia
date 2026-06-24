@@ -181,8 +181,8 @@ export function registerHub08Routes(app: Express) {
       const retencoes = calcularRetencoes(Number(evt.amount), evt.municipio_ibge);
 
       // Chamar Control Plus via plusFetch
-      const PLUS_URL = process.env.PLUS_URL || process.env.CONTROL_PLUS_URL || "";
-      const PLUS_TOKEN = process.env.PLUS_API_TOKEN || process.env.CONTROL_PLUS_SUPERADMIN_TOKEN || "";
+      const PLUS_URL = process.env.PLUS_URL || "";
+      const PLUS_TOKEN = process.env.PLUS_API_TOKEN || "";
 
       if (!PLUS_URL || !PLUS_TOKEN) {
         // Modo simulado para desenvolvimento
@@ -325,8 +325,8 @@ export function registerHub08Routes(app: Express) {
       );
       if (!evt) return res.status(404).json({ error: "Evento não encontrado ou não emitido" });
 
-      const PLUS_URL = process.env.PLUS_URL || process.env.CONTROL_PLUS_URL || "";
-      const PLUS_TOKEN = process.env.PLUS_API_TOKEN || process.env.CONTROL_PLUS_SUPERADMIN_TOKEN || "";
+      const PLUS_URL = process.env.PLUS_URL || "";
+      const PLUS_TOKEN = process.env.PLUS_API_TOKEN || "";
 
       if (PLUS_URL && PLUS_TOKEN && evt.nfse_number) {
         await fetch(`${PLUS_URL}/api/nfse/cancelar`, {

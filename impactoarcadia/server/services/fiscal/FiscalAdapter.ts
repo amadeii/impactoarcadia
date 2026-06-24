@@ -1,3 +1,9 @@
+import {
+  cancelarNfeControlPlus,
+  emitirNfeControlPlus,
+  isControlPlusConfigured,
+} from "../../integrations/controlplusClient";
+
 interface NFeCabecalho {
   naturezaOperacao: string;
   tipoDocumento: number;
@@ -118,8 +124,34 @@ class FiscalAdapter {
     }
   }
 
+  private defaultEmpresaId(): number {
+    const parsed = Number(process.env.CONTROL_PLUS_EMPRESA_ID || 1);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }
+
+  private toFiscalResponse(result: Awaited<ReturnType<typeof emitirNfeControlPlus>>): FiscalResponse {
+    if (result.ok === false) {
+      return {
+        success: false,
+        error: result.message,
+        statusCode: result.status,
+      };
+    }
+
+    const data = result.data?.data && typeof result.data.data === "object" ? result.data.data : result.data;
+    return {
+      success: true,
+      chave: data?.chave ?? data?.access_key,
+      protocolo: data?.protocolo ?? data?.protocol,
+      xml: data?.xml,
+      pdf: data?.pdf,
+      statusCode: 200,
+    };
+  }
+
   async emitirNFe(dados: NFeRequest): Promise<FiscalResponse> {
-    return this.request('nfe/emitir', dados);
+    const result = await emitirNfeControlPlus(dados as unknown as Record<string, any>, this.defaultEmpresaId());
+    return this.toFiscalResponse(result);
   }
 
   async emitirNFCe(dados: NFCeRequest): Promise<FiscalResponse> {
@@ -131,7 +163,8 @@ class FiscalAdapter {
   }
 
   async cancelarNFe(chave: string, justificativa: string): Promise<FiscalResponse> {
-    return this.request('nfe/cancelar', { chave, justificativa });
+    const result = await cancelarNfeControlPlus({ chave, justificativa }, this.defaultEmpresaId());
+    return this.toFiscalResponse(result);
   }
 
   async cartaCorrecao(chave: string, correcao: string): Promise<FiscalResponse> {
@@ -151,7 +184,7 @@ class FiscalAdapter {
   }
 
   isConfigured(): boolean {
-    return !!(this.plusUrl && this.apiToken);
+    return isControlPlusConfigured() || !!(this.plusUrl && this.apiToken);
   }
 }
 

@@ -6,6 +6,7 @@ import { randomBytes, scrypt, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import type { User as SelectUser } from "@shared/schema";
+import { syncUserToControlPlus, type ControlPlusResult } from "./integrations/controlplusClient";
 
 declare global {
   namespace Express {
@@ -40,6 +41,35 @@ function getSessionCookieSecure(): boolean | "auto" {
   if (["1", "true", "yes", "on"].includes(value || "")) return true;
   if (["0", "false", "no", "off"].includes(value || "")) return false;
   return process.env.NODE_ENV === "production" ? "auto" : false;
+}
+
+function parseEmpresaId(value: unknown): number {
+  const parsed = Number(value ?? process.env.CONTROL_PLUS_EMPRESA_ID ?? 1);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function getControlPlusUserName(body: any, username: string): string {
+  const firstName = typeof body?.firstName === "string" ? body.firstName.trim() : "";
+  const lastName = typeof body?.lastName === "string" ? body.lastName.trim() : "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
+  return body?.nome || body?.name || fullName || username;
+}
+
+function isAcceptableControlPlusUserSyncError(result: ControlPlusResult): boolean {
+  if (result.ok === true) return true;
+
+  const text = [
+    result.message,
+    typeof result.data === "string" ? result.data : JSON.stringify(result.data ?? {}),
+  ].join(" ").toLowerCase();
+
+  return text.includes("email") && (
+    text.includes("utilizado") ||
+    text.includes("cadastrado") ||
+    text.includes("already") ||
+    text.includes("exists")
+  );
 }
 
 const sessionSettings: session.SessionOptions = {
@@ -111,6 +141,19 @@ export function setupAuth(app: Express) {
         ...req.body,
         username,
         password: await hashPassword(password),
+      });
+
+      void syncUserToControlPlus({
+        nome: getControlPlusUserName(req.body, username),
+        email: req.body?.email || username,
+        senha: password,
+        empresaId: parseEmpresaId(req.body?.empresaId ?? req.body?.empresa_id),
+      }).then((result) => {
+        if (result.ok === false && !isAcceptableControlPlusUserSyncError(result)) {
+          console.warn(`[controlplus] user sync failed: ${result.message}`);
+        }
+      }).catch((error: any) => {
+        console.warn(`[controlplus] user sync failed: ${error?.message || "unknown error"}`);
       });
 
       req.login(user, async (err) => {

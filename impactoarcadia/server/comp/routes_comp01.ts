@@ -117,8 +117,8 @@ export function registerComp01Routes(app: Express): void {
         return res.status(400).json({ ok: false, error: "Chave de acesso inválida (deve ter 44 dígitos)." });
       }
 
-      const plusUrl   = process.env.PLUS_URL || process.env.CONTROL_PLUS_URL || '';
-      const plusToken = process.env.PLUS_API_TOKEN || process.env.CONTROL_PLUS_SUPERADMIN_TOKEN || '';
+      const plusUrl   = process.env.PLUS_URL || '';
+      const plusToken = process.env.PLUS_API_TOKEN || '';
 
       if (!plusUrl || !plusToken) {
         return res.status(422).json({

@@ -1,3 +1,5 @@
+import { emitirNfeControlPlus } from "../integrations/controlplusClient";
+
 const PLUS_PORT = process.env.PLUS_PORT || 8080;
 const PLUS_BASE_URL = `http://localhost:${PLUS_PORT}`;
 
@@ -320,10 +322,18 @@ export const plusClient = {
   // ========================================
 
   async emitirNFe(dados: PlusNFeData, empresaId?: number): Promise<PlusApiResponse> {
-    return plusFetch("/api/nfe/emitir", {
-      method: "POST",
-      body: JSON.stringify(dados),
-    }, empresaId);
+    const result = await emitirNfeControlPlus(dados as unknown as Record<string, any>, empresaId);
+    if (result.ok === false) {
+      return {
+        success: false,
+        error: result.message,
+      };
+    }
+
+    return {
+      success: true,
+      data: result.data,
+    };
   },
 
   async emitirNFCe(dados: PlusNFeData, empresaId?: number): Promise<PlusApiResponse> {
