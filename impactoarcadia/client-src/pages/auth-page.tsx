@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-const browserIcon = "/arcadia_suite_icon.png";
-import { Loader2 } from "lucide-react";
+import arcadiaPlusIcon from "@/assets/arcadia_plus_icon.png";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -15,6 +15,14 @@ export default function AuthPage() {
   
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [registerData, setRegisterData] = useState({ username: "", password: "", name: "" });
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+
+  const togglePasswordVisibility = (field: string) => {
+    setVisiblePasswords((current) => ({
+      ...current,
+      [field]: !current[field],
+    }));
+  };
 
   if (user) {
     setLocation("/");
@@ -37,7 +45,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
           <div className="flex items-center gap-3 mb-8">
-            <img src={browserIcon} alt="Arcadia" className="w-10 h-10" />
+            <img src={arcadiaPlusIcon} alt="Arcadia" className="w-10 h-10 rounded-lg object-cover" />
             <h1 className="text-2xl font-semibold text-slate-900">Arcádia Suite</h1>
           </div>
 
@@ -71,15 +79,32 @@ export default function AuthPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="login-password">Senha</Label>
-                      <Input
-                        id="login-password"
-                        data-testid="input-login-password"
-                        type="password"
-                        placeholder="Digite sua senha"
-                        value={loginData.password}
-                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="login-password"
+                          data-testid="input-login-password"
+                          type={visiblePasswords.login ? "text" : "password"}
+                          placeholder="Digite sua senha"
+                          value={loginData.password}
+                          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                          className="pr-10"
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-slate-500 hover:text-slate-700"
+                          aria-label={visiblePasswords.login ? "Ocultar senha" : "Mostrar senha"}
+                          onClick={() => togglePasswordVisibility("login")}
+                        >
+                          {visiblePasswords.login ? (
+                            <EyeOff className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                     <Button 
                       type="submit" 
@@ -136,15 +161,32 @@ export default function AuthPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="register-password">Senha</Label>
-                      <Input
-                        id="register-password"
-                        data-testid="input-register-password"
-                        type="password"
-                        placeholder="Crie uma senha segura"
-                        value={registerData.password}
-                        onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="register-password"
+                          data-testid="input-register-password"
+                          type={visiblePasswords.register ? "text" : "password"}
+                          placeholder="Crie uma senha segura"
+                          value={registerData.password}
+                          onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                          className="pr-10"
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-slate-500 hover:text-slate-700"
+                          aria-label={visiblePasswords.register ? "Ocultar senha" : "Mostrar senha"}
+                          onClick={() => togglePasswordVisibility("register")}
+                        >
+                          {visiblePasswords.register ? (
+                            <EyeOff className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                     <Button 
                       type="submit" 
@@ -173,9 +215,9 @@ export default function AuthPage() {
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 items-center justify-center p-12">
         <div className="max-w-md text-center">
           <img 
-            src={browserIcon} 
+            src={arcadiaPlusIcon} 
             alt="Arcádia Suite" 
-            className="w-32 h-32 mx-auto mb-8 drop-shadow-2xl"
+            className="w-32 h-32 mx-auto mb-8 rounded-2xl object-cover drop-shadow-2xl"
           />
           <h2 className="text-3xl font-bold text-white mb-4">
             Arcádia Suite
