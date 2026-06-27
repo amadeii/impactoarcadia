@@ -42,7 +42,6 @@ import {
   Link,
   File
 } from "lucide-react";
-const browserIcon = "/arcadia_suite_icon.png";
 import { DigitalClock } from "@/components/DigitalClock";
 
 type ParaTab = "projetos" | "areas" | "recursos" | "arquivo";
@@ -707,7 +706,9 @@ export default function Cockpit() {
           <div className="p-3 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <img src={browserIcon} alt="Arcádia" className="w-6 h-6 rounded" />
+                <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shrink-0">
+                  <Layers className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+                </div>
                 <span className="font-semibold text-sm">Arcádia Suite</span>
               </div>
               <DigitalClock />
@@ -1362,7 +1363,7 @@ export default function Cockpit() {
               </Card>
 
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate("/xos")} data-testid="card-xos-quick">
+                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-md transition-shadow cursor-pointer overflow-hidden" onClick={() => navigate("/xos")} data-testid="card-xos-quick">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2 text-blue-700">
                       <Layers className="w-4 h-4" /> XOS
@@ -1370,17 +1371,17 @@ export default function Cockpit() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-xs text-blue-600 mb-3">Experience Operating System</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button size="sm" variant="outline" className="h-7 text-xs justify-start" onClick={(e) => { e.stopPropagation(); navigate("/xos/crm"); }} data-testid="button-xos-crm">
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] gap-1.5">
+                      <Button size="sm" variant="outline" className="h-8 min-w-0 justify-start px-2 text-[11px] text-blue-700" onClick={(e) => { e.stopPropagation(); navigate("/xos/crm"); }} data-testid="button-xos-crm">
                         👥 CRM
                       </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs justify-start" onClick={(e) => { e.stopPropagation(); navigate("/xos/inbox"); }} data-testid="button-xos-inbox">
+                      <Button size="sm" variant="outline" className="h-8 min-w-0 justify-start px-2 text-[11px] text-blue-700" onClick={(e) => { e.stopPropagation(); navigate("/xos/inbox"); }} data-testid="button-xos-inbox">
                         💬 Inbox
                       </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs justify-start" onClick={(e) => { e.stopPropagation(); navigate("/xos/tickets"); }} data-testid="button-xos-tickets">
+                      <Button size="sm" variant="outline" className="h-8 min-w-0 justify-start px-2 text-[11px] text-blue-700" onClick={(e) => { e.stopPropagation(); navigate("/xos/tickets"); }} data-testid="button-xos-tickets">
                         🎫 Tickets
                       </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs justify-start" onClick={(e) => { e.stopPropagation(); navigate("/xos/campaigns"); }} data-testid="button-xos-campaigns">
+                      <Button size="sm" variant="outline" className="h-8 min-w-0 justify-start px-2 text-[11px] text-blue-700" onClick={(e) => { e.stopPropagation(); navigate("/xos/campaigns"); }} data-testid="button-xos-campaigns">
                         🎯 Campanhas
                       </Button>
                     </div>

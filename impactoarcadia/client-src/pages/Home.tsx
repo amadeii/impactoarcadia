@@ -7,7 +7,6 @@ import {
   Calculator, Receipt, UserCog, Building2, Package, Wallet,
   Hash, ChevronDown, Circle, MessageSquare, Zap, Database, ArrowRight
 } from "lucide-react";
-const browserIcon = "/arcadia_suite_icon.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -428,7 +427,9 @@ export default function Home() {
         <aside className="w-64 border-r bg-white flex flex-col shrink-0 hidden md:flex">
           <div className="p-4 border-b">
             <div className="flex items-center gap-2">
-              <img src={browserIcon} alt="Arcadia Logo" className="w-8 h-8" />
+              <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shrink-0">
+                <Layers className="w-4 h-4 text-white" aria-hidden="true" />
+              </div>
               <span className="font-semibold text-slate-800">Arcádia Suite</span>
             </div>
           </div>
@@ -649,7 +650,9 @@ export default function Home() {
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="flex flex-col items-center py-6 md:py-8">
               <div className="flex items-center gap-3 mb-4">
-                <img src={browserIcon} alt="Arcadia Logo" className="w-12 h-12 md:hidden" />
+                <div className="w-12 h-12 rounded bg-gradient-to-br from-blue-600 to-indigo-700 items-center justify-center shrink-0 md:hidden flex">
+                  <Layers className="w-6 h-6 text-white" aria-hidden="true" />
+                </div>
                 <h1 className="text-2xl md:text-3xl font-light text-slate-800" data-testid="text-welcome">
                   Olá, {user?.username || "Usuário"}
                 </h1>

@@ -2,7 +2,6 @@ import { useLocation } from "wouter";
 import React, { useEffect, useState } from "react";
 import { Bot, Settings, MessageCircle, Zap, LayoutDashboard, Compass, Users, Ticket, LogOut, User, Shield, Receipt, Layers, Building2, Store, Code2, HardHat, CheckSquare, MapPin, Truck, Factory, Wallet, BookOpen, Handshake, ClipboardList, Ruler, Package, Scissors, Bell, CheckCheck, AlertTriangle, Flag, Clock, Calendar } from "lucide-react";
 import { EmpresaContextSelector } from "@/components/EmpresaContextSelector";
-const browserIcon = "/arcadia_suite_icon.png";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigationTracking } from "@/hooks/use-navigation-tracking";
 import { useModules } from "@/hooks/useModules";
@@ -209,7 +208,9 @@ function CompactNavigationBar() {
           onClick={() => navigateTo("/", "Início")}
           data-testid="bookmark-home"
         >
-          <img src={browserIcon} className="w-4 h-4 rounded-sm object-cover" alt="" />
+          <div className="w-4 h-4 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-sm flex items-center justify-center">
+            <LayoutDashboard className="w-2.5 h-2.5 text-white" aria-hidden="true" />
+          </div>
           <span className="hidden md:inline">Início</span>
         </div>
 
